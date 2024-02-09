@@ -49,12 +49,21 @@ ENV LANG=en_US.UTF-8
 # https://github.com/Tyrrrz/DiscordChatExporter/issues/851
 # https://github.com/Tyrrrz/DiscordChatExporter/issues/1174
 RUN apk add --no-cache su-exec
-RUN addgroup -S -g 1000 dce && adduser -S -H -G dce -u 1000 dce
 
 # This directory is exposed to the user for mounting purposes, so it's important that it always
 # stays the same for backwards compatibility.
 WORKDIR /out
 
+# ADD openssh to the image
+# <ChangePassword> is the password in this scenario
+RUN apk add --no-cache openssh
+RUN echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config
+RUN adduser -h /home/dceaas -s /bin/sh -D dceaas
+RUN echo -n 'dceaas:<ChangePassword>' | chpasswd
+
 COPY --from=build /tmp/app/DiscordChatExporter.Cli/bin/publish /opt/app
-COPY docker-entrypoint.sh /opt/app
-ENTRYPOINT ["/opt/app/docker-entrypoint.sh"]
+COPY docker-entrypoint-aaS.sh /opt/app
+
+ENTRYPOINT ["/opt/app/docker-entrypoint-aaS.sh"]
+EXPOSE 22
+
